@@ -16,8 +16,7 @@ private const val IMAGES_GROUP_NAME = "image"
  * - An image of the Quarkdown logo
  */
 class DefaultProjectCreatorInitialContentSupplier : ProjectCreatorInitialContentSupplier {
-    override val templateCodeContent: String
-        get() = javaClass.getResourceAsStream(CODE_CONTENT_PATH)!!.bufferedReader().readText()
+    override val templateCodeContentResource: String = CODE_CONTENT_PATH
 
     private val imageGroup: OutputResource
         get() =

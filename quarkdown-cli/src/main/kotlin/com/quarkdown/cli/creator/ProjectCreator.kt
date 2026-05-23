@@ -35,10 +35,11 @@ class ProjectCreator(
         // so that the initial content template can reference it.
         template.optionalValue(ProjectCreatorTemplatePlaceholders.MAIN_FILE, mainFileName)
 
-        // Initial content is processed via the same template processor.
+        // Initial content is processed via the same template processor, but loaded as a
+        // precompiled JTE resource so the bundled jlink JRE (no `jdk.compiler`) can render it.
         val initialContentCode =
-            initialContentSupplier.templateCodeContent
-                ?.let { template.copy(text = it).process().trim() }
+            initialContentSupplier.templateCodeContentResource
+                ?.let { template.copyAsResource(it).process().trim() }
 
         // Processed initial content is injected into the main template.
         template.optionalValue(ProjectCreatorTemplatePlaceholders.INITIAL_CONTENT, initialContentCode)

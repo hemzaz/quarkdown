@@ -214,8 +214,13 @@ fun resolveRequiredModules(): String {
                     commandLine(
                         "jdeps",
                         "--ignore-missing-deps",
+                        // `base` analyzes only the JAR's base entries, skipping `META-INF/versions/N/`.
+                        // Required to support runtime dependencies (e.g. gg.jte:jte-runtime) whose
+                        // multi-release JARs ship classes for Java >17 that JDK 17's jdeps cannot parse
+                        // (it throws `MultiReleaseException` even with `--multi-release 17`). Base classes
+                        // are exactly what executes on JRE 17, so module detection is unaffected.
                         "--multi-release",
-                        "17",
+                        "base",
                         "--print-module-deps",
                         *jars.map { it.absolutePath }.toTypedArray(),
                     )
@@ -245,9 +250,13 @@ val bundleRuntime by tasks.registering {
     doLast {
         val outputDir = runtimeDir.get().asFile
         delete(outputDir)
+        // Resolve `jlink` from the Gradle-running JDK rather than `PATH`, so the bundled JRE
+        // matches the Java version that compiled the classes (otherwise hosts with multiple JDKs
+        // can produce a Java 11 runtime that refuses to load class file version 61.0).
+        val jlinkExec = file("${System.getProperty("java.home")}/bin/jlink")
         exec {
             commandLine(
-                "jlink",
+                jlinkExec.absolutePath,
                 "--add-modules",
                 resolveRequiredModules(),
                 "--strip-debug",

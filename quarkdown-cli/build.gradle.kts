@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     application
+    id("gg.jte.gradle") version "3.2.3"
 }
 
 dependencies {
@@ -17,6 +18,11 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:5.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("io.methvin:directory-watcher:0.19.1")
+
+    // Runtime loader for JTE templates precompiled by the gg.jte.gradle plugin below.
+    // Required as a direct dep so the generated `Jte*Generated.java` sources can resolve
+    // `gg.jte.TemplateOutput` / `gg.jte.html.HtmlInterceptor` at compile time.
+    implementation("gg.jte:jte-runtime:3.2.3")
 }
 
 application {
@@ -37,4 +43,21 @@ val writeVersionFile by tasks.registering {
 tasks.processResources {
     dependsOn(writeVersionFile)
     dependsOn(":assembleDevLib")
+}
+
+// Precompile `.jte` templates (project creator scaffolds) into the JAR, so `quarkdown create`
+// works on the bundled JRE without `jdk.compiler`.
+jte {
+    generate()
+    contentType.set(gg.jte.ContentType.Plain)
+    sourceDirectory.set(file("src/main/jte").toPath())
+    targetDirectory.set(layout.buildDirectory.dir("generated-sources/jte").get().asFile.toPath())
+}
+
+sourceSets.main {
+    java.srcDir(layout.buildDirectory.dir("generated-sources/jte"))
+}
+
+tasks.named("compileKotlin") {
+    dependsOn("generateJte")
 }

@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     id("com.quarkdown.amber") version "2.1.4"
+    id("gg.jte.gradle") version "3.2.3"
     `java-test-fixtures`
 }
 
@@ -63,4 +64,22 @@ val extractCslStyles by tasks.registering {
 
 sourceSets.main {
     resources.srcDir(extractCslStyles)
+}
+
+// Precompile the JTE test fixture under `src/test/jte/` so `TemplateProcessorTest.from resource`
+// exercises the same precompiled-engine path used in production. No main `.jte` files exist
+// in this module — only the test fixture.
+jte {
+    generate()
+    contentType.set(gg.jte.ContentType.Plain)
+    sourceDirectory.set(file("src/test/jte").toPath())
+    targetDirectory.set(layout.buildDirectory.dir("generated-test-sources/jte").get().asFile.toPath())
+}
+
+sourceSets.test {
+    java.srcDir(layout.buildDirectory.dir("generated-test-sources/jte"))
+}
+
+tasks.named("compileTestKotlin") {
+    dependsOn("generateJte")
 }
